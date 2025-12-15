@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 export default function ApartmentBlock({
   x,
   y,
@@ -9,6 +11,24 @@ export default function ApartmentBlock({
   y: number;
   video: string;
 }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // ✅ Explicit play() fixes Safari / iOS / Chrome edge cases
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    v.muted = true;
+    v.playsInline = true;
+
+    const playPromise = v.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Autoplay blocked — silently ignore
+      });
+    }
+  }, []);
+
   return (
     <div
       style={{
@@ -24,11 +44,12 @@ export default function ApartmentBlock({
       }}
     >
       <video
+        ref={videoRef}
         src={video}
-        muted
         loop
-        autoPlay
+        muted
         playsInline
+        preload="metadata"
         style={{
           width: "100%",
           height: "100%",
