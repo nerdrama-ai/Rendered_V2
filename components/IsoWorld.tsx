@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import ApartmentBlock from "./ApartmentBlock";
 import { generateVideo } from "./VideoGenerator";
 
+/* ===== GRID CONSTANTS ===== */
+const TILE_WIDTH = 240;
+const TILE_HEIGHT = 160;
+
+/* ===== GRID → SCREEN PROJECTION ===== */
+function isoToScreen(gridX: number, gridY: number) {
+  return {
+    x: (gridX - gridY) * (TILE_WIDTH / 2),
+    y: (gridX + gridY) * (TILE_HEIGHT / 2)
+  };
+}
+
 export default function IsoWorld() {
-  const worldRef = useRef<HTMLDivElement>(null);
   const [videos, setVideos] = useState<string[]>([]);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -20,7 +31,7 @@ export default function IsoWorld() {
     })();
   }, []);
 
-  // Mouse drag
+  /* ===== PAN CONTROLS ===== */
   useEffect(() => {
     let dragging = false;
     let last = { x: 0, y: 0 };
@@ -52,7 +63,7 @@ export default function IsoWorld() {
     };
   }, []);
 
-  // Zoom
+  /* ===== ZOOM ===== */
   useEffect(() => {
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -62,35 +73,36 @@ export default function IsoWorld() {
     return () => window.removeEventListener("wheel", wheel);
   }, []);
 
+  /* ===== GRID POSITIONS ===== */
+  const apartments = videos.map((video, i) => {
+    const gridX = i % 3;
+    const gridY = Math.floor(i / 3);
+    const { x, y } = isoToScreen(gridX, gridY);
+    return { video, x, y };
+  });
+
   return (
-    <div
-      ref={worldRef}
-      style={{
-        width: "100%",
-        height: "100%",
-        overflow: "hidden"
-      }}
-    >
+    <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
       <div
         style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
           transform: `
             translate(${offset.x}px, ${offset.y}px)
             scale(${scale})
             rotateX(60deg)
             rotateZ(45deg)
           `,
-          transformOrigin: "center",
-          position: "absolute",
-          left: "50%",
-          top: "50%"
+          transformOrigin: "center"
         }}
       >
-        {videos.map((v, i) => (
+        {apartments.map((apt, i) => (
           <ApartmentBlock
             key={i}
-            video={v}
-            x={i * 240}
-            y={i * 160}
+            video={apt.video}
+            x={apt.x}
+            y={apt.y}
           />
         ))}
       </div>
